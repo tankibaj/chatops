@@ -20,7 +20,18 @@ if ARGOCD_API_KEY:
 
 def get_argocd_applications():
     response = session.get(f"{ARGOCD_API_URL}/api/v1/applications")
-    return response.json()["items"]
+    applications = response.json()["items"]
+    return {app['metadata']['name']: app['status']['sync']['status'] for app in applications}
+
+
+def get_out_of_sync_applications():
+    applications = get_argocd_applications()
+    return [name for name, status in applications.items() if status != 'Synced']
+
+
+def get_synced_applications():
+    applications = get_argocd_applications()
+    return [name for name, status in applications.items() if status == 'Synced']
 
 
 def get_argocd_application(name):
@@ -52,6 +63,24 @@ def chat_with_openai(prompt):
             {
                 "name": "get_number_of_applications",
                 "description": "Get the total number of ArgoCD applications",
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
+            },
+            {
+                "name": "get_out_of_sync_applications",
+                "description": "Get a list of ArgoCD applications that are out of sync",
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
+            },
+            {
+                "name": "get_synced_applications",
+                "description": "Get a list of ArgoCD applications that are synced",
                 "parameters": {
                     "type": "object",
                     "properties": {},
@@ -105,13 +134,16 @@ def chat_with_openai(prompt):
             return len(get_argocd_applications())
         elif function_name == 'get_list_of_applications':
             return [app['metadata']['name'] for app in get_argocd_applications()]
+        elif function_name == 'get_out_of_sync_applications':
+            return get_out_of_sync_applications()
+        elif function_name == 'get_synced_applications':
+            return get_synced_applications()
         elif function_name == 'get_application_health_status':
             return get_application_health_status(arguments['name'])
         elif function_name == 'get_application_errors':
             return get_application_errors(arguments['name'])
     else:
         return response.choices[0].message['content']
-
 
 
 def main():
