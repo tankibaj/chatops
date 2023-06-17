@@ -7,143 +7,62 @@ import os
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-ARGOCD_API_URL = os.getenv('ARGOCD_URL')
-ARGOCD_API_KEY = os.getenv("ARGOCD_API_KEY", None)
-
 openai.api_key = OPENAI_API_KEY
 
-session = requests.Session()
 
-if ARGOCD_API_KEY:
-    session.headers.update({"Authorization": f"Bearer {ARGOCD_API_KEY}"})
-
-
-def get_argocd_applications():
-    response = session.get(f"{ARGOCD_API_URL}/api/v1/applications")
-    applications = response.json()["items"]
-    return {app['metadata']['name']: app['status']['sync']['status'] for app in applications}
+def get_pizza_info(pizza_name):
+    # This would normally be a database query.
+    # Here we just return a mocked object.
+    return json.dumps({
+        'name': pizza_name,
+        'price': 10.99  # Mocked price
+    })
 
 
-def get_out_of_sync_applications():
-    applications = get_argocd_applications()
-    return [name for name, status in applications.items() if status != 'Synced']
-
-
-def get_synced_applications():
-    applications = get_argocd_applications()
-    return [name for name, status in applications.items() if status == 'Synced']
-
-
-def get_argocd_application(name):
-    response = session.get(f"{ARGOCD_API_URL}/api/v1/applications/{name}")
-    return response.json()
-
-
-def get_application_health_status(name):
-    response = session.get(f"{ARGOCD_API_URL}/api/v1/applications/{name}")
-    return response.json()["status"]["health"]["status"]
-
-
-def get_application_errors(name):
-    response = session.get(f"{ARGOCD_API_URL}/api/v1/applications/{name}")
-    sync_status = response.json()["status"]["sync"]
-    return sync_status.get('errorMessage', 'No sync errors')
-
-
-def chat_with_openai(prompt):
+def chat_with_openai(query):
     response = openai.ChatCompletion.create(
         model="gpt-4-0613",
-        temperature=0.9,
-        top_p=1,
         messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt}
+            {"role": "user", "content": query}
         ],
         functions=[
             {
-                "name": "get_number_of_applications",
-                "description": "Get the total number of ArgoCD applications",
-                "parameters": {
-                    "type": "object",
-                    "properties": {},
-                    "required": []
-                }
-            },
-            {
-                "name": "get_out_of_sync_applications",
-                "description": "Get a list of ArgoCD applications that are out of sync",
-                "parameters": {
-                    "type": "object",
-                    "properties": {},
-                    "required": []
-                }
-            },
-            {
-                "name": "get_synced_applications",
-                "description": "Get a list of ArgoCD applications that are synced",
-                "parameters": {
-                    "type": "object",
-                    "properties": {},
-                    "required": []
-                }
-            },
-            {
-                "name": "get_list_of_applications",
-                "description": "Get a list of ArgoCD applications",
-                "parameters": {
-                    "type": "object",
-                    "properties": {},
-                    "required": []
-                }
-            },
-            {
-                "name": "get_application_health_status",
-                "description": "Get the health status of an ArgoCD application",
+                "name": "get_pizza_info",
+                "description": "Get information about a specific pizza",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "name": {
+                        "pizza_name": {
                             "type": "string",
-                            "description": "The name of the ArgoCD application"
+                            "description": "The name of the pizza"
                         }
                     },
-                    "required": ["name"]
-                }
-            },
-            {
-                "name": "get_application_errors",
-                "description": "Get any sync error messages from an ArgoCD application",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "name": {
-                            "type": "string",
-                            "description": "The name of the ArgoCD application"
-                        }
-                    },
-                    "required": ["name"]
+                    "required": ["pizza_name"]
                 }
             }
         ]
     )
-    if 'function_call' in response.choices[0].message:
-        function_call = response.choices[0].message['function_call']
-        function_name = function_call['name']
-        arguments = json.loads(function_call['arguments'])
-        if function_name == 'get_number_of_applications':
-            return len(get_argocd_applications())
-        elif function_name == 'get_list_of_applications':
-            return [app['metadata']['name'] for app in get_argocd_applications()]
-        elif function_name == 'get_out_of_sync_applications':
-            return get_out_of_sync_applications()
-        elif function_name == 'get_synced_applications':
-            return get_synced_applications()
-        elif function_name == 'get_application_health_status':
-            return get_application_health_status(arguments['name'])
-        elif function_name == 'get_application_errors':
-            return get_application_errors(arguments['name'])
+
+    message = response.choices[0].message
+    if 'function_call' in message:
+        function_name = message['function_call']['name']
+        arguments = json.loads(message['function_call']['arguments'])
+        if function_name == 'get_pizza_info':
+            function_response = get_pizza_info(**arguments)
+            response2 = openai.ChatCompletion.create(
+                model="gpt-4-0613",
+                messages=[
+                    {"role": "user", "content": query},
+                    {"role": "assistant", "content": None, "function_call": message['function_call']},
+                    {"role": "function", "name": function_name, "content": function_response}
+                ]
+            )
+            return response2.choices[0].message['content']
     else:
-        return response.choices[0].message['content']
+        return message['content']
+
+
+# print(chat_with_openai("What is the price of pizza salami?"))
 
 
 def main():
