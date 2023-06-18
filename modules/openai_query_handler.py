@@ -5,13 +5,13 @@ from dotenv import find_dotenv, load_dotenv
 
 
 class OpenAIQueryHandler:
-    def __init__(self, api_functions, openai_function_definitions, openai_model="gpt-4-0613"):
+    def __init__(self, chatbot_functions, openai_function_definitions, openai_model="gpt-4-0613"):
         load_dotenv(find_dotenv())
         openai.api_key = os.environ.get("OPENAI_API_KEY")
         if openai.api_key is None:
             raise ValueError("OPENAI_API_KEY not found in environment variables.")
 
-        self.api_functions = api_functions
+        self.chatbot_functions = chatbot_functions
         self.openai_function_definitions = openai_function_definitions
         self.openai_model = openai_model
 
@@ -30,7 +30,7 @@ class OpenAIQueryHandler:
             function_args_json = message_from_openai["function_call"].get("arguments", {})
             function_args = json.loads(function_args_json)
 
-            api_function = self.api_functions.get(function_name)
+            api_function = self.chatbot_functions.get(function_name)
 
             if api_function:
                 result = str(api_function(**function_args))
