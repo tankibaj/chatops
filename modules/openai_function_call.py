@@ -46,5 +46,47 @@ openai_function_definitions = [
             },
             "required": ["owner", "repo", "tag1", "tag2"]
         }
+    },
+    {
+        "name": "get_harbor_projects",
+        "description": "Get all projects in Harbor",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    },
+    {
+        "name": "get_harbor_artifacts",
+        "description": "Get all artifacts in a specific Harbor project",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "project_name": {"type": "string", "description": "The name of the Harbor project"}
+            },
+            "required": ["project_name"]
+        }
+    },
+    {
+        "name": "get_artifact_vulnerabilities",
+        "description": "Get vulnerabilities of a specific artifact in Harbor",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "artifact_name": {"type": "string", "description": "The name of the Harbor artifact"}
+            },
+            "required": ["artifact_name"]
+        }
+    },
+    {
+        "name": "get_artifact_details",
+        "description": "Get details of a specific artifact in Harbor",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "artifact_name": {"type": "string", "description": "The name of the Harbor artifact"}
+            },
+            "required": ["artifact_name"]
+        }
     }
 ]
