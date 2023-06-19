@@ -1,8 +1,13 @@
 from fastapi import FastAPI
 import uvicorn
-from modules.chatbot_call import chatbot_functions
 from modules.openai_query_handler import OpenAIQueryHandler
-from modules.openai_function_call import openai_function_definitions
+from modules.argocd import argocd_functions, argocd_function_definitions
+from modules.github import github_functions, github_function_definitions
+from modules.harbor import harbor_functions, harbor_function_definitions
+
+# Combine all the functions from different modules
+chatbot_functions = {**argocd_functions, **github_functions, **harbor_functions}
+openai_function_definitions = argocd_function_definitions + github_function_definitions + harbor_function_definitions
 
 assistant = OpenAIQueryHandler(chatbot_functions, openai_function_definitions)
 
