@@ -1,6 +1,7 @@
 import requests
 import json
 import os
+from typing import Optional
 from dotenv import find_dotenv, load_dotenv
 
 load_dotenv(find_dotenv())
@@ -63,23 +64,30 @@ def compare_releases(owner, repo, tag1, tag2):
 
 
 def get_harbor_projects():
-    response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects")
+    response = harbor_session.get(f"{HARBOR_URL}/projects")
     return response.json()
 
 
-def get_harbor_artifacts(project_name):
-    project_id = [project['project_id'] for project in get_harbor_projects() if project['name'] == project_name][0]
-    response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects/{project_id}/repositories")
+def get_harbor_repositories(project_name: Optional[str] = None):
+    if project_name:
+        response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects/{project_name}/repositories")
+    else:
+        response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/repositories")
     return response.json()
 
 
-def get_artifact_vulnerabilities(artifact_name):
-    response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects/{artifact_name}/vulnerabilities")
+def get_harbor_artifacts(repository_name: str):
+    response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects/{repository_name}/artifacts")
     return response.json()
 
 
-def get_artifact_details(artifact_name):
-    response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects/{artifact_name}")
+def get_harbor_vulnerabilities(artifact_reference: str):
+    response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects/{artifact_reference}/vulnerabilities")
+    return response.json()
+
+
+def get_harbor_repository(repository_name: str):
+    response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/repositories/{repository_name}")
     return response.json()
 
 
@@ -89,7 +97,8 @@ chatbot_functions = {
     "get_release_by_tag": get_release_by_tag,
     "compare_releases": compare_releases,
     "get_harbor_projects": get_harbor_projects,
+    "get_harbor_repositories": get_harbor_repositories,
     "get_harbor_artifacts": get_harbor_artifacts,
-    "get_artifact_vulnerabilities": get_artifact_vulnerabilities,
-    "get_artifact_details": get_artifact_details
+    "get_harbor_vulnerabilities": get_harbor_vulnerabilities,
+    "get_harbor_repository": get_harbor_repository
 }

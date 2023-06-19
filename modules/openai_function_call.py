@@ -49,7 +49,7 @@ openai_function_definitions = [
     },
     {
         "name": "get_harbor_projects",
-        "description": "Get all projects in Harbor",
+        "description": "Get information about Harbor projects",
         "parameters": {
             "type": "object",
             "properties": {},
@@ -57,36 +57,47 @@ openai_function_definitions = [
         }
     },
     {
+        "name": "get_harbor_repositories",
+        "description": "Get the repositories of a Harbor project or all repositories",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "project_name": {"type": "string", "description": "The name of the project (optional)"}
+            },
+            "required": []
+        }
+    },
+    {
         "name": "get_harbor_artifacts",
-        "description": "Get all artifacts in a specific Harbor project",
+        "description": "Get the artifacts of a Harbor repository",
         "parameters": {
             "type": "object",
             "properties": {
-                "project_name": {"type": "string", "description": "The name of the Harbor project"}
+                "repository_name": {"type": "string", "description": "The nameof the repository"}
             },
-            "required": ["project_name"]
+            "required": ["repository_name"]
         }
     },
     {
-        "name": "get_artifact_vulnerabilities",
-        "description": "Get vulnerabilities of a specific artifact in Harbor",
+        "name": "get_harbor_vulnerabilities",
+        "description": "Get the vulnerabilities of a Harbor artifact",
         "parameters": {
             "type": "object",
             "properties": {
-                "artifact_name": {"type": "string", "description": "The name of the Harbor artifact"}
+                "artifact_reference": {"type": "string", "description": "The reference of the artifact"}
             },
-            "required": ["artifact_name"]
+            "required": ["artifact_reference"]
         }
     },
     {
-        "name": "get_artifact_details",
-        "description": "Get details of a specific artifact in Harbor",
+        "name": "get_harbor_repository",
+        "description": "Get information about a Harbor repository",
         "parameters": {
             "type": "object",
             "properties": {
-                "artifact_name": {"type": "string", "description": "The name of the Harbor artifact"}
+                "repository_name": {"type": "string", "description": "The name of the repository"}
             },
-            "required": ["artifact_name"]
+            "required": ["repository_name"]
         }
     }
 ]
