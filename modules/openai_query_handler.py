@@ -2,6 +2,8 @@ import json
 import os
 from dotenv import find_dotenv, load_dotenv
 import openai
+import tiktoken
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
 class OpenAIQueryHandler:
@@ -14,6 +16,21 @@ class OpenAIQueryHandler:
         self.custom_toolkit_functions = custom_toolkit_functions
         self.openai_function_definitions = openai_function_definitions
         self.openai_model = openai_model
+        self.tokenizer = tiktoken.encoding_for_model("gpt-4")
+
+    def count_token(self, text):
+        num_token = len(self.tokenizer.encode(text))
+        return num_token
+
+    def chunkify_text(self, text):
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=10,
+            length_function=self.count_token,
+            separators=['\n\n', '\n', ' ', ''],
+            chunk_overlap=0
+        )
+        chunks = splitter.split_text(text)
+        return chunks
 
     def initiate_openai_conversation(self, query):
         response = openai.ChatCompletion.create(
@@ -40,22 +57,26 @@ class OpenAIQueryHandler:
         return None, None
 
     def construct_openai_query_response(self, query):
-        openai_message = self.initiate_openai_conversation(query)
-        function_name, result = self.process_openai_function_call(openai_message)
+        chunks = self.chunkify_text(query)
+        response = ""
+        for chunk in chunks:
+            openai_message = self.initiate_openai_conversation(chunk)
+            function_name, result = self.process_openai_function_call(openai_message)
+            if function_name and result:
+                second_response = openai.ChatCompletion.create(
+                    model=self.openai_model,
+                    messages=[
+                        {"role": "user", "content": chunk},
+                        openai_message,
+                        {
+                            "role": "function",
+                            "name": function_name,
+                            "content": result
+                        }
+                    ]
+                )
+                response += second_response.choices[0].message['content']
+            else:
+                response += openai_message['content']
+        return response
 
-        if function_name and result:
-            second_response = openai.ChatCompletion.create(
-                model=self.openai_model,
-                messages=[
-                    {"role": "user", "content": query},
-                    openai_message,
-                    {
-                        "role": "function",
-                        "name": function_name,
-                        "content": result
-                    }
-                ]
-            )
-            return second_response.choices[0].message['content']
-        else:
-            return openai_message['content']
