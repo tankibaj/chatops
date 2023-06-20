@@ -4,40 +4,39 @@ from dotenv import find_dotenv, load_dotenv
 
 load_dotenv(find_dotenv())
 
-HARBOR_API_URL = os.getenv('HARBOR_API_URL')
-HARBOR_API_USERNAME = os.getenv("HARBOR_API_USERNAME", None)
-HARBOR_API_PASSWORD = os.getenv("HARBOR_API_PASSWORD", None)
+HARBOR_URL = os.getenv('HARBOR_URL')
+HARBOR_API_KEY = os.getenv("HARBOR_API_KEY", None)
 
 harbor_session = requests.Session()
 
-if HARBOR_API_USERNAME and HARBOR_API_PASSWORD:
-    harbor_session.auth = (HARBOR_API_USERNAME, HARBOR_API_PASSWORD)
+if HARBOR_API_KEY:
+    harbor_session.headers.update({"Authorization": f"token {HARBOR_API_KEY}"})
 
 
 def get_harbor_projects():
-    response = harbor_session.get(f"{HARBOR_API_URL}/api/v2.0/projects")
+    response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects")
     return response.json()
 
 
 def get_harbor_repositories(project_id):
-    response = harbor_session.get(f"{HARBOR_API_URL}/api/v2.0/projects/{project_id}/repositories")
+    response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects/{project_id}/repositories")
     return response.json()
 
 
 def get_harbor_artifacts(repository_name):
-    response = harbor_session.get(f"{HARBOR_API_URL}/api/v2.0/projects/{repository_name}/artifacts")
+    response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects/{repository_name}/artifacts")
     return response.json()
 
 
 def get_harbor_artifact_vulnerabilities(repository_name, reference):
     response = harbor_session.get(
-        f"{HARBOR_API_URL}/api/v2.0/projects/{repository_name}/repositories/{reference}/vulnerabilities")
+        f"{HARBOR_URL}/api/v2.0/projects/{repository_name}/repositories/{reference}/vulnerabilities")
     return response.json()
 
 
 def describe_harbor_repository(repository_name):
     response = harbor_session.get(
-        f"{HARBOR_API_URL}/api/v2.0/projects/{repository_name}/repositories/{repository_name}")
+        f"{HARBOR_URL}/api/v2.0/projects/{repository_name}/repositories/{repository_name}")
     return response.json()
 
 

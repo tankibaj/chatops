@@ -4,7 +4,7 @@ from dotenv import find_dotenv, load_dotenv
 
 load_dotenv(find_dotenv())
 
-ARGOCD_API_URL = os.getenv('ARGOCD_URL')
+ARGOCD_URL = os.getenv('ARGOCD_URL')
 ARGOCD_API_KEY = os.getenv("ARGOCD_API_KEY", None)
 
 argocd_session = requests.Session()
@@ -14,7 +14,7 @@ if ARGOCD_API_KEY:
 
 
 def get_argocd_applications():
-    response = argocd_session.get(f"{ARGOCD_API_URL}/api/v1/applications")
+    response = argocd_session.get(f"{ARGOCD_URL}/api/v1/applications")
     applications = response.json()["items"]
     return {
         app['metadata']['name']: {
