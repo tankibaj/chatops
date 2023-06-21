@@ -18,7 +18,20 @@ def get_harbor_projects():
     return response.json()
 
 
-def get_harbor_repositories(project_id):
+def get_harbor_repositories(project_name):
+    # Get the list of projects
+    projects = get_harbor_projects()
+
+    # Find the project with the given name
+    project = next((project for project in projects if project['name'] == project_name), None)
+
+    # If the project was found, get its ID
+    if project is not None:
+        project_id = project['project_id']
+    else:
+        raise ValueError(f"No project found with name {project_name}")
+
+    # Make the API request
     response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects/{project_id}/repositories")
     return response.json()
 

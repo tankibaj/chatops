@@ -24,9 +24,9 @@ class OpenAIQueryHandler:
 
     def chunkify_text(self, text):
         splitter = RecursiveCharacterTextSplitter(
-            chunk_size=10,
+            chunk_size=200,
             length_function=self.count_token,
-            separators=['\n\n', '\n', ' ', ''],
+            separators=['.', '\n', ' ', '\n\n', ',', '}', ']'],
             chunk_overlap=0
         )
         chunks = splitter.split_text(text)
