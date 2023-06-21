@@ -17,29 +17,36 @@ class OpenAIQueryHandler:
         self.openai_function_definitions = openai_function_definitions
         self.openai_model = openai_model
         self.tokenizer = tiktoken.encoding_for_model("gpt-4")
+        self.max_tokens = 4096  # Set this to half of your maximum token limit
 
     def count_token(self, text):
         num_token = len(self.tokenizer.encode(text))
         return num_token
 
     def chunkify_text(self, text):
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=10,
-            length_function=self.count_token,
-            separators=['\n\n', '\n', ' ', ''],
-            chunk_overlap=0
-        )
-        chunks = splitter.split_text(text)
+        chunks = []
+        current_chunk = ""
+        for word in text.split():
+            if self.count_token(current_chunk + " " + word) <= self.max_tokens:
+                current_chunk += " " + word
+            else:
+                chunks.append(current_chunk)
+                current_chunk = word
+        chunks.append(current_chunk)  # Append the last chunk
         return chunks
 
     def initiate_openai_conversation(self, query):
-        response = openai.ChatCompletion.create(
-            model=self.openai_model,
-            messages=[{"role": "user", "content": query}],
-            functions=self.openai_function_definitions,
-        )
-        openai_message = response["choices"][0]["message"]
-        return openai_message
+        responses = []
+        chunks = self.chunkify_text(query)
+        for chunk in chunks:
+            response = openai.ChatCompletion.create(
+                model=self.openai_model,
+                messages=[{"role": "user", "content": chunk}],
+                functions=self.openai_function_definitions,
+            )
+            openai_message = response["choices"][0]["message"]
+            responses.append(openai_message)
+        return responses
 
     def process_openai_function_call(self, openai_message):
         if openai_message.get("function_call"):
@@ -57,26 +64,27 @@ class OpenAIQueryHandler:
         return None, None
 
     def construct_openai_query_response(self, query):
-        chunks = self.chunkify_text(query)
-        response = ""
-        for chunk in chunks:
-            openai_message = self.initiate_openai_conversation(chunk)
-            function_name, result = self.process_openai_function_call(openai_message)
+        responses = self.initiate_openai_conversation(query)
+        response_text = ""
+        for response in responses:
+            function_name, result = self.process_openai_function_call(response)
             if function_name and result:
-                second_response = openai.ChatCompletion.create(
-                    model=self.openai_model,
-                    messages=[
-                        {"role": "user", "content": chunk},
-                        openai_message,
-                        {
-                            "role": "function",
-                            "name": function_name,
-                            "content": result
-                        }
-                    ]
-                )
-                response += second_response.choices[0].message['content']
+                second_query_chunks = self.chunkify_text(query)
+                for chunk in second_query_chunks:
+                    second_response = openai.ChatCompletion.create(
+                        model=self.openai_model,
+                        messages=[
+                            {"role": "user", "content": chunk},
+                            response,
+                            {
+                                "role": "function",
+                                "name": function_name,
+                                "content": result
+                            }
+                        ]
+                    )
+                    response_text += second_response.choices[0].message['content']
             else:
-                response += openai_message['content']
-        return response
+                response_text += response['content']
+        return response_text
 
