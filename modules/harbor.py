@@ -1,3 +1,4 @@
+import json
 import os
 import requests
 from dotenv import find_dotenv, load_dotenv
@@ -7,49 +8,39 @@ load_dotenv(find_dotenv())
 HARBOR_URL = os.getenv('HARBOR_URL')
 HARBOR_API_KEY = os.getenv("HARBOR_API_KEY", None)
 
-harbor_session = requests.Session()
+if HARBOR_API_KEY is None:
+    raise ValueError("HARBOR_API_KEY is not defined")
 
-if HARBOR_API_KEY:
-    harbor_session.headers.update({"Authorization": f"token {HARBOR_API_KEY}"})
+headers = {
+    "Accept": "application/json",
+    "Authorization": f"Basic {HARBOR_API_KEY}"
+}
 
 
 def get_harbor_projects():
-    response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects")
+    response = requests.get(f"{HARBOR_URL}/api/v2.0/projects", headers=headers)
     return response.json()
 
 
 def get_harbor_repositories(project_name):
-    # Get the list of projects
-    projects = get_harbor_projects()
-
-    # Find the project with the given name
-    project = next((project for project in projects if project['name'] == project_name), None)
-
-    # If the project was found, get its ID
-    if project is not None:
-        project_id = project['project_id']
-    else:
-        raise ValueError(f"No project found with name {project_name}")
-
-    # Make the API request
-    response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects/{project_id}/repositories")
+    response = requests.get(f"{HARBOR_URL}/api/v2.0/projects/{project_name}/repositories", headers=headers)
     return response.json()
 
 
 def get_harbor_artifacts(repository_name):
-    response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects/{repository_name}/artifacts")
+    response = requests.get(f"{HARBOR_URL}/api/v2.0/projects/{repository_name}/artifacts", headers=headers)
     return response.json()
 
 
 def get_harbor_artifact_vulnerabilities(repository_name, reference):
-    response = harbor_session.get(
-        f"{HARBOR_URL}/api/v2.0/projects/{repository_name}/repositories/{reference}/vulnerabilities")
+    response = requests.get(
+        f"{HARBOR_URL}/api/v2.0/projects/{repository_name}/repositories/{reference}/vulnerabilities", headers=headers)
     return response.json()
 
 
 def describe_harbor_repository(repository_name):
-    response = harbor_session.get(
-        f"{HARBOR_URL}/api/v2.0/projects/{repository_name}/repositories/{repository_name}")
+    response = requests.get(
+        f"{HARBOR_URL}/api/v2.0/projects/{repository_name}/repositories/{repository_name}", headers=headers)
     return response.json()
 
 
