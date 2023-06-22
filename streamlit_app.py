@@ -14,7 +14,7 @@ llm = OpenAIQueryHandler(custom_toolkit_functions, openai_function_definitions)
 if 'messages' not in st.session_state:
     st.session_state['messages'] = []
 
-st.title("ChatOps Bot")
+st.title("ChatOps")
 
 # Input field for the user to input their query
 user_input = st.text_input("You: ")
