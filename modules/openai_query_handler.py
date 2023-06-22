@@ -18,33 +18,25 @@ class OpenAIQueryHandler:
         self.openai_model = openai_model
         self.tokenizer = tiktoken.encoding_for_model("gpt-4")
 
-    def count_token(self, text):
-        num_token = len(self.tokenizer.encode(text))
-        return num_token
-
-    def chunkify_text(self, text):
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=4096,
-            length_function=self.count_token,
-            separators=['.', '\n', ' ', '\n\n', ',', '}', ']'],
-            chunk_overlap=0
-        )
-        chunks = splitter.split_text(text)
-        return chunks
-
     def initiate_openai_conversation(self, query):
-        response = openai.ChatCompletion.create(
+        first_response = openai.ChatCompletion.create(
             model=self.openai_model,
-            messages=[{"role": "user", "content": query}],
+            messages=[
+                {"role": "system", "content": "You are ChatOps, a DevOps chatbot developed by Naim, designed to "
+                                              "assist with answering questions, providing information, and engaging "
+                                              "in conversation on a wide range of DevOps topics.Please provide short "
+                                              "answers to user queries unless asked to answer in detail."},
+                {"role": "user", "content": query}
+            ],
             functions=self.openai_function_definitions,
         )
-        openai_message = response["choices"][0]["message"]
-        return openai_message
+        first_response = first_response["choices"][0]["message"]
+        return first_response
 
-    def process_openai_function_call(self, openai_message):
-        if openai_message.get("function_call"):
-            function_name = openai_message["function_call"]["name"]
-            function_args_json = openai_message["function_call"].get("arguments", {})
+    def process_openai_function_call(self, first_response):
+        if first_response.get("function_call"):
+            function_name = first_response["function_call"]["name"]
+            function_args_json = first_response["function_call"].get("arguments", {})
             function_args = json.loads(function_args_json)
 
             selected_function = self.custom_toolkit_functions.get(function_name)
@@ -57,26 +49,25 @@ class OpenAIQueryHandler:
         return None, None
 
     def construct_openai_query_response(self, query):
-        chunks = self.chunkify_text(query)
-        response = ""
-        for chunk in chunks:
-            openai_message = self.initiate_openai_conversation(chunk)
-            function_name, result = self.process_openai_function_call(openai_message)
-            if function_name and result:
-                second_response = openai.ChatCompletion.create(
-                    model=self.openai_model,
-                    messages=[
-                        {"role": "user", "content": chunk},
-                        openai_message,
-                        {
-                            "role": "function",
-                            "name": function_name,
-                            "content": result
-                        }
-                    ]
-                )
-                response += second_response.choices[0].message['content']
-            else:
-                response += openai_message['content']
+        first_response = self.initiate_openai_conversation(query)
+        function_name, function_response = self.process_openai_function_call(first_response)
+        if function_name and function_response:
+            second_response = openai.ChatCompletion.create(
+                model=self.openai_model,
+                messages=[
+                    {"role": "system", "content": "Please provide short answers to user queries unless asked to "
+                                                  "answer in detail."},
+                    {"role": "user", "content": query},
+                    first_response,
+                    {
+                        "role": "function",
+                        "name": function_name,
+                        "content": function_response
+                    }
+                ]
+            )
+            response = second_response.choices[0].message['content']
+        else:
+            response = first_response['content']
         return response
 
