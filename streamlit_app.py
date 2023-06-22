@@ -1,5 +1,4 @@
 import streamlit as st
-from streamlit_chat import message
 from modules.openai_query_handler import OpenAIQueryHandler
 from modules.argocd import argocd_functions, argocd_function_definitions
 from modules.github import github_functions, github_function_definitions
@@ -15,10 +14,19 @@ llm = OpenAIQueryHandler(custom_toolkit_functions, openai_function_definitions)
 if 'messages' not in st.session_state:
     st.session_state['messages'] = []
 
-st.title("ChatOps")
+st.title("ChatOps Bot")
 
 # Input field for the user to input their query
 user_input = st.text_input("You: ")
+
+
+# Custom function to display messages with markdown support
+def markdown_message(content, is_user=False, key=None):
+    if is_user:
+        st.markdown(f"<div style='text-align: right; color: white;'>You: {content}</div>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<div style='text-align: left; color: green;'>Assistant: {content}</div>", unsafe_allow_html=True)
+
 
 if st.button("Send"):
     # Add the user's query to the conversation history
@@ -33,9 +41,9 @@ if st.button("Send"):
     # Display the conversation history
     for msg in st.session_state['messages']:
         if msg["role"] == "user":
-            message(msg["content"], is_user=True)
+            markdown_message(msg["content"], is_user=True)
         else:
-            message(msg["content"])
+            markdown_message(msg["content"])
 
 # Sidebar for additional options
 # st.sidebar.title("Options")
