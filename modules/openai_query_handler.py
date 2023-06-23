@@ -3,12 +3,13 @@ import os
 from dotenv import find_dotenv, load_dotenv
 import openai
 import tiktoken
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.text_splitter import TokenTextSplitter
 
 
 class OpenAIQueryHandler:
     # Initialize the class with necessary parameters and configurations
-    def __init__(self, custom_toolkit_functions, openai_function_definitions, openai_model4="gpt-4-0613", openai_model3="gpt-3.5-turbo-0613"):
+    def __init__(self, custom_toolkit_functions, openai_function_definitions, openai_model4="gpt-4-0613",
+                 openai_model3="gpt-3.5-turbo-0613"):
         # Load environment variables
         load_dotenv(find_dotenv())
         # Get the OpenAI API key from environment variables
@@ -23,6 +24,21 @@ class OpenAIQueryHandler:
         self.openai_model4 = openai_model4
         self.openai_model3 = openai_model3
         self.tokenizer = tiktoken.encoding_for_model("gpt-4")
+
+    # count token length
+    def count_tokens(self, text):
+        token_count = len(list(self.tokenizer.encode(text)))
+        return token_count
+
+    # Split a text string into smaller chunks using the CharacterTextSplitter class
+    @staticmethod
+    def split_text_into_chunks(text, chunk_size=8192, chunk_overlap=100):
+        text_splitter = TokenTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+        chunks = text_splitter.split_text(text)
+        return chunks
 
     # Method to initiate a conversation with the OpenAI API
     def initiate_openai_conversation(self, query):
@@ -77,38 +93,43 @@ class OpenAIQueryHandler:
         first_response = self.initiate_openai_conversation(query)
         # Process the function call from the first response
         function_name, function_response = self.process_openai_function_call(first_response)
-
-        # If a function call was made and a response was obtained
+        # function_response_chunks = self.split_text_into_chunks(function_response)
+        # for chunk in function_response_chunks:
+        #     return self.count_tokens(chunk)
+        final_response = ""
+        # If a function call was made and a response was obtained, continue the conversation with the function response
         if function_name and function_response:
-            try:
-                # Continue the conversation with the OpenAI API using the function response
-                second_response = openai.ChatCompletion.create(
-                    model=self.openai_model4,
-                    messages=[
-                        {"role": "system", "content": "Please provide short answers to user queries unless asked to "
-                                                      "answer in detail."},
-                        {"role": "user", "content": query},
-                        first_response,
-                        {
-                            "role": "function",
-                            "name": function_name,
-                            "content": function_response
-                        }
-                    ]
-                )
-                # Extract the final response from the second response
-                response = second_response.choices[0].message['content']
-            except openai.error.InvalidRequestError as e:
-                # Handle the token limit error specifically
-                if 'maximum context length' in str(e):
-                    print("Error: The conversation exceeded the maximum token limit.")
-                else:
-                    print(f"Error communicating with OpenAI API: {e}")
-                response = None
+            function_response_chunks = self.split_text_into_chunks(function_response)
+            for chunk in function_response_chunks:
+                try:
+                    # Continue the conversation with the OpenAI API using each chunk of the function response
+                    second_response = openai.ChatCompletion.create(
+                        model=self.openai_model4,
+                        messages=[
+                            {"role": "system", "content": "Please provide short answers to user queries unless asked "
+                                                          "to answer in detail."},
+                            {"role": "user", "content": query},
+                            first_response,
+                            {
+                                "role": "function",
+                                "name": function_name,
+                                "content": chunk
+                            }
+                        ]
+                    )
+                    # Extract the final response from the second response
+                    final_response += second_response.choices[0].message['content']
+                except openai.error.InvalidRequestError as e:
+                    # Handle the token limit error specifically
+                    if 'maximum context length' in str(e):
+                        print("Error: The conversation exceeded the maximum token limit.")
+                    else:
+                        print(f"Error communicating with OpenAI API: {e}")
+                    final_response = None
+                    break
         else:
             # If no function call was made, use the content from the first response as the final response
-            response = first_response['content'] if first_response else None
+            final_response = first_response['content'] if first_response else None
 
         # Return the final response
-        return response
-
+        return final_response
