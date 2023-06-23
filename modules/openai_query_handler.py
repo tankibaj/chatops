@@ -3,12 +3,12 @@ import os
 from dotenv import find_dotenv, load_dotenv
 import openai
 import tiktoken
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
 class OpenAIQueryHandler:
     # Initialize the class with necessary parameters and configurations
-    def __init__(self, custom_toolkit_functions, openai_function_definitions, openai_model4="gpt-4-0613", openai_model3="gpt-3.5-turbo-0613"):
+    def __init__(self, custom_toolkit_functions, openai_function_definitions, openai_model4="gpt-4-0613",
+                 openai_model3="gpt-3.5-turbo-0613"):
         # Load environment variables
         load_dotenv(find_dotenv())
         # Get the OpenAI API key from environment variables
@@ -23,6 +23,11 @@ class OpenAIQueryHandler:
         self.openai_model4 = openai_model4
         self.openai_model3 = openai_model3
         self.tokenizer = tiktoken.encoding_for_model("gpt-4")
+
+    # count token length
+    def count_tokens(self, text):
+        token_count = len(list(self.tokenizer.encode(text)))
+        return token_count
 
     # Method to initiate a conversation with the OpenAI API
     def initiate_openai_conversation(self, query):
@@ -111,4 +116,3 @@ class OpenAIQueryHandler:
 
         # Return the final response
         return response
-
