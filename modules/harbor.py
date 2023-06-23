@@ -95,15 +95,15 @@ harbor_function_definitions = [
             "required": ["artifact_reference"]
         }
     },
-    {
-        "name": "get_harbor_repository",
-        "description": "Get information about a Harbor repository",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "repository_name": {"type": "string", "description": "The name of the repository"}
-            },
-            "required": ["repository_name"]
-        }
-    }
+    # {
+    #     "name": "get_harbor_repository",
+    #     "description": "Get information about a Harbor repository",
+    #     "parameters": {
+    #         "type": "object",
+    #         "properties": {
+    #             "repository_name": {"type": "string", "description": "The name of the repository"}
+    #         },
+    #         "required": ["repository_name"]
+    #     }
+    # }
 ]
