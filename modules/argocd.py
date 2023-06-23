@@ -34,7 +34,7 @@ def get_argocd_applications():
             # 'project': app['spec']['project'],
             # 'source_repo': app['spec']['source']['repoURL'],
             # 'source_type': app['spec']['source'].get('chart', 'Git'),
-            # 'destination_server': app['spec']['destination'].get('server', 'No server provided'),
+            'destination_server': app['spec']['destination'].get('server', 'No server provided'),
             # 'destination_namespace': app['spec']['destination']['namespace']
         }
         results.append(app_info)
