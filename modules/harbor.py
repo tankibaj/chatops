@@ -1,3 +1,4 @@
+import json
 import os
 import requests
 from dotenv import find_dotenv, load_dotenv
@@ -7,36 +8,39 @@ load_dotenv(find_dotenv())
 HARBOR_URL = os.getenv('HARBOR_URL')
 HARBOR_API_KEY = os.getenv("HARBOR_API_KEY", None)
 
-harbor_session = requests.Session()
+if HARBOR_API_KEY is None:
+    raise ValueError("HARBOR_API_KEY is not defined")
 
-if HARBOR_API_KEY:
-    harbor_session.headers.update({"Authorization": f"token {HARBOR_API_KEY}"})
+headers = {
+    "Accept": "application/json",
+    "Authorization": f"Basic {HARBOR_API_KEY}"
+}
 
 
 def get_harbor_projects():
-    response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects")
+    response = requests.get(f"{HARBOR_URL}/api/v2.0/projects", headers=headers)
     return response.json()
 
 
-def get_harbor_repositories(project_id):
-    response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects/{project_id}/repositories")
+def get_harbor_repositories(project_name):
+    response = requests.get(f"{HARBOR_URL}/api/v2.0/projects/{project_name}/repositories", headers=headers)
     return response.json()
 
 
 def get_harbor_artifacts(repository_name):
-    response = harbor_session.get(f"{HARBOR_URL}/api/v2.0/projects/{repository_name}/artifacts")
+    response = requests.get(f"{HARBOR_URL}/api/v2.0/projects/{repository_name}/artifacts", headers=headers)
     return response.json()
 
 
 def get_harbor_artifact_vulnerabilities(repository_name, reference):
-    response = harbor_session.get(
-        f"{HARBOR_URL}/api/v2.0/projects/{repository_name}/repositories/{reference}/vulnerabilities")
+    response = requests.get(
+        f"{HARBOR_URL}/api/v2.0/projects/{repository_name}/repositories/{reference}/vulnerabilities", headers=headers)
     return response.json()
 
 
 def describe_harbor_repository(repository_name):
-    response = harbor_session.get(
-        f"{HARBOR_URL}/api/v2.0/projects/{repository_name}/repositories/{repository_name}")
+    response = requests.get(
+        f"{HARBOR_URL}/api/v2.0/projects/{repository_name}/repositories/{repository_name}", headers=headers)
     return response.json()
 
 
@@ -91,15 +95,15 @@ harbor_function_definitions = [
             "required": ["artifact_reference"]
         }
     },
-    {
-        "name": "get_harbor_repository",
-        "description": "Get information about a Harbor repository",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "repository_name": {"type": "string", "description": "The name of the repository"}
-            },
-            "required": ["repository_name"]
-        }
-    }
+    # {
+    #     "name": "get_harbor_repository",
+    #     "description": "Get information about a Harbor repository",
+    #     "parameters": {
+    #         "type": "object",
+    #         "properties": {
+    #             "repository_name": {"type": "string", "description": "The name of the repository"}
+    #         },
+    #         "required": ["repository_name"]
+    #     }
+    # }
 ]
