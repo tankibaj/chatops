@@ -7,7 +7,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
 class OpenAIQueryHandler:
-    def __init__(self, custom_toolkit_functions, openai_function_definitions, openai_model="gpt-4-0613"):
+    def __init__(self, custom_toolkit_functions, openai_function_definitions, openai_model4="gpt-4-0613", openai_model3="gpt-3.5-turbo-0613"):
         load_dotenv(find_dotenv())
         openai.api_key = os.environ.get("OPENAI_API_KEY")
         if openai.api_key is None:
@@ -15,12 +15,13 @@ class OpenAIQueryHandler:
 
         self.custom_toolkit_functions = custom_toolkit_functions
         self.openai_function_definitions = openai_function_definitions
-        self.openai_model = openai_model
+        self.openai_model4 = openai_model4
+        self.openai_model3 = openai_model3
         self.tokenizer = tiktoken.encoding_for_model("gpt-4")
 
     def initiate_openai_conversation(self, query):
         first_response = openai.ChatCompletion.create(
-            model=self.openai_model,
+            model=self.openai_model3,
             messages=[
                 {
                     "role": "system",
@@ -57,7 +58,7 @@ class OpenAIQueryHandler:
         function_name, function_response = self.process_openai_function_call(first_response)
         if function_name and function_response:
             second_response = openai.ChatCompletion.create(
-                model=self.openai_model,
+                model=self.openai_model4,
                 messages=[
                     {"role": "system", "content": "Please provide short answers to user queries unless asked to "
                                                   "answer in detail."},
