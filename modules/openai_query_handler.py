@@ -3,12 +3,13 @@ import os
 from dotenv import find_dotenv, load_dotenv
 import openai
 import tiktoken
+from modules.conversation_history import ConversationHistory
 
 
 class OpenAIQueryHandler:
     # Initialize the class with necessary parameters and configurations
     def __init__(self, custom_toolkit_functions, openai_function_definitions, openai_model4="gpt-4-0613",
-                 openai_model3="gpt-3.5-turbo-0613"):
+                 openai_model3="gpt-3.5-turbo-0613", max_token_limit=4096):
         # Load environment variables
         load_dotenv(find_dotenv())
         # Get the OpenAI API key from environment variables
@@ -23,6 +24,7 @@ class OpenAIQueryHandler:
         self.openai_model4 = openai_model4
         self.openai_model3 = openai_model3
         self.tokenizer = tiktoken.encoding_for_model("gpt-4")
+        self.conversation_history = ConversationHistory()
 
     # count token length
     def count_tokens(self, text):
@@ -35,7 +37,7 @@ class OpenAIQueryHandler:
             # Create a chat completion with the OpenAI API
             first_response = openai.ChatCompletion.create(
                 model=self.openai_model3,
-                messages=[
+                messages=self.conversation_history.get_conversation_history() + [
                     {
                         "role": "system",
                         "content": "You are ChatOps, a DevOps chatbot developed by Naim, designed to "
@@ -53,7 +55,7 @@ class OpenAIQueryHandler:
             return first_response
         except openai.error.InvalidRequestError as e:
             if 'maximum context length' in str(e):
-                print("Error: The conversation exceeded the maximum token limit.")
+                print("Error: The conversation exceeded the maximum token limit in first model.")
             else:
                 print(f"Error communicating with OpenAI API: {e}")
             return None
@@ -77,9 +79,14 @@ class OpenAIQueryHandler:
         return None, None
 
     # Method to construct the final response to the user query
+    # Method to construct the final response to the user query
     def construct_openai_query_response(self, query):
+        # Save the user query to the conversation history
+        self.conversation_history.add_message("user", query)
+
         # Initiate the conversation with the OpenAI API
         first_response = self.initiate_openai_conversation(query)
+
         # Process the function call from the first response
         function_name, function_response = self.process_openai_function_call(first_response)
 
@@ -89,11 +96,7 @@ class OpenAIQueryHandler:
                 # Continue the conversation with the OpenAI API using the function response
                 second_response = openai.ChatCompletion.create(
                     model=self.openai_model4,
-                    messages=[
-                        {"role": "system", "content": "Please provide short answers to user queries unless asked to "
-                                                      "answer in detail."},
-                        {"role": "user", "content": query},
-                        first_response,
+                    messages=self.conversation_history.get_conversation_history() + [
                         {
                             "role": "function",
                             "name": function_name,
@@ -103,16 +106,24 @@ class OpenAIQueryHandler:
                 )
                 # Extract the final response from the second response
                 response = second_response.choices[0].message['content']
+
+                # Save the final response to the conversation history
+                if response is not None:
+                    self.conversation_history.add_message("assistant", response)
             except openai.error.InvalidRequestError as e:
                 # Handle the token limit error specifically
                 if 'maximum context length' in str(e):
-                    print("Error: The conversation exceeded the maximum token limit.")
+                    print("Error: The conversation exceeded the maximum token limit in second model.")
                 else:
                     print(f"Error communicating with OpenAI API: {e}")
                 response = None
         else:
             # If no function call was made, use the content from the first response as the final response
             response = first_response['content'] if first_response else None
+
+            # Save the final response to the conversation history
+            if response is not None:
+                self.conversation_history.add_message("assistant", response)
 
         # Return the final response
         return response
