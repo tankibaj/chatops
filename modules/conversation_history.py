@@ -8,7 +8,7 @@ from collections import deque
 
 
 class ConversationHistory:
-    def __init__(self, conversation_token_limit=500, summary_word_limit=300, openai_model="gpt-3.5-turbo"):
+    def __init__(self, conversation_token_limit=2048, summary_word_limit=1000, openai_model="gpt-3.5-turbo"):
         # Load environment variables
         load_dotenv(find_dotenv())
         # Get the OpenAI API key from environment variables
@@ -24,7 +24,7 @@ class ConversationHistory:
         self.token_count = 0
 
         # Set up logging
-        logging.basicConfig(level=logging.DEBUG)
+        # logging.basicConfig(level=logging.DEBUG)
         self.logger = logging.getLogger(__name__)
 
     def count_tokens(self, text):
@@ -37,10 +37,10 @@ class ConversationHistory:
             return
 
         message = {"role": role, "content": content}
-        message_token_count = self.count_tokens(content)
-        self.logger.debug(f"Adding message. Token count: {message_token_count}. Token limit: {self.conversation_token_limit}")
+        conversation_token_count = self.count_tokens(self.get_conversation_text())
+        self.logger.debug(f"Adding message. Token count: {conversation_token_count}. Token limit: {self.conversation_token_limit}")
 
-        if self.token_count + message_token_count > self.conversation_token_limit:
+        if self.token_count + conversation_token_count > self.conversation_token_limit:
             # Create a summary of the current conversation history
             self.logger.debug("Token limit exceeded. Summarizing conversation history.")
             conversation_text = self.get_conversation_text()
@@ -54,7 +54,7 @@ class ConversationHistory:
 
         # Add the new message
         self.conversation_history.append(message)
-        self.token_count += message_token_count
+        self.token_count += conversation_token_count
 
     def get_conversation_text(self):
         return " ".join([message["content"] for message in self.conversation_history])
