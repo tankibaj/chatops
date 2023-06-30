@@ -24,14 +24,16 @@ def get_argocd_applications():
     return applications
 
 
-def count_argocd_apps():
-    applications = get_argocd_applications()
-    return len(applications)
-
-
 def get_argocd_app_names():
-    applications = get_argocd_applications()
-    return [app['metadata']['name'] for app in applications]
+    response = requests.get(f"{ARGOCD_URL}/api/v1/applications", headers=headers)
+    data = response.json()
+    app_names = [app['metadata']['name'] for app in data['items']]
+    return app_names
+
+
+def count_argocd_apps():
+    applications = get_argocd_app_names()
+    return len(applications)
 
 
 def get_status_apps(status):
@@ -73,12 +75,12 @@ argocd_functions = {
 argocd_function_definitions = [
     {
         "name": "get_argocd_applications",
-        "description": "Fetches all ArgoCD applications from the ArgoCD server.",
+        "description": "Fetches detail information of all ArgoCD applications from the ArgoCD server.",
         "parameters": {
             "type": "object",
             "properties": {},
             "required": []
-        }
+        },
     },
     {
         "name": "count_argocd_apps",
@@ -87,7 +89,7 @@ argocd_function_definitions = [
             "type": "object",
             "properties": {},
             "required": []
-        }
+        },
     },
     {
         "name": "get_argocd_app_names",
@@ -96,7 +98,7 @@ argocd_function_definitions = [
             "type": "object",
             "properties": {},
             "required": []
-        }
+        },
     },
     {
         "name": "get_status_apps",
@@ -111,7 +113,7 @@ argocd_function_definitions = [
                 }
             },
             "required": ["status"]
-        }
+        },
     },
     {
         "name": "count_status_apps",
@@ -126,7 +128,7 @@ argocd_function_definitions = [
                 }
             },
             "required": ["status"]
-        }
+        },
     },
     {
         "name": "get_status_app_names",
@@ -141,7 +143,7 @@ argocd_function_definitions = [
                 }
             },
             "required": ["status"]
-        }
+        },
     },
     {
         "name": "get_sync_errors",
@@ -150,7 +152,7 @@ argocd_function_definitions = [
             "type": "object",
             "properties": {},
             "required": []
-        }
+        },
     },
     {
         "name": "get_destination_server",
@@ -159,7 +161,6 @@ argocd_function_definitions = [
             "type": "object",
             "properties": {},
             "required": []
-        }
+        },
     }
 ]
-
