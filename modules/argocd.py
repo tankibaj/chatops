@@ -75,16 +75,7 @@ argocd_functions = {
 argocd_function_definitions = [
     {
         "name": "get_argocd_applications",
-        "description": "Fetches detail information of all ArgoCD applications from the ArgoCD server.",
-        "parameters": {
-            "type": "object",
-            "properties": {},
-            "required": []
-        },
-    },
-    {
-        "name": "count_argocd_apps",
-        "description": "Counts the total number of ArgoCD applications.",
+        "description": "Fetches detailed information of all ArgoCD applications from the ArgoCD server.",
         "parameters": {
             "type": "object",
             "properties": {},
@@ -94,6 +85,15 @@ argocd_function_definitions = [
     {
         "name": "get_argocd_app_names",
         "description": "Retrieves a list of all ArgoCD application names.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        },
+    },
+    {
+        "name": "count_argocd_apps",
+        "description": "Counts the total number of ArgoCD applications.",
         "parameters": {
             "type": "object",
             "properties": {},
