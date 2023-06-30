@@ -25,10 +25,8 @@ def get_argocd_applications():
 
 
 def get_argocd_app_names():
-    response = requests.get(f"{ARGOCD_URL}/api/v1/applications", headers=headers)
-    data = response.json()
-    app_names = [app['metadata']['name'] for app in data['items']]
-    return app_names
+    applications = get_argocd_applications()
+    return [app['metadata']['name'] for app in applications]
 
 
 def count_argocd_apps():
@@ -38,16 +36,11 @@ def count_argocd_apps():
 
 def get_status_apps(status):
     applications = get_argocd_applications()
-    return [app for app in applications if app['status']['sync']['status'] == status]
+    return [app['metadata']['name'] for app in applications if app['status']['sync']['status'] == status]
 
 
 def count_status_apps(status):
     return len(get_status_apps(status))
-
-
-def get_status_app_names(status):
-    apps = get_status_apps(status)
-    return [app['metadata']['name'] for app in apps]
 
 
 def get_sync_errors():
@@ -56,35 +49,27 @@ def get_sync_errors():
             app['status']['sync']['status'] == 'OutOfSync']
 
 
-def get_destination_server():
+def get_destination_server(app_name):
     applications = get_argocd_applications()
-    return [app['spec']['destination'].get('server', 'No server provided') for app in applications]
+    for app in applications:
+        if app['metadata']['name'] == app_name:
+            return app['spec']['destination'].get('server', 'No server provided')
+    return "Application not found"
 
 
 argocd_functions = {
-    "get_argocd_applications": get_argocd_applications,
-    "count_argocd_apps": count_argocd_apps,
     "get_argocd_app_names": get_argocd_app_names,
+    "count_argocd_apps": count_argocd_apps,
     "get_status_apps": get_status_apps,
     "count_status_apps": count_status_apps,
-    "get_status_app_names": get_status_app_names,
     "get_sync_errors": get_sync_errors,
     "get_destination_server": get_destination_server,
 }
 
 argocd_function_definitions = [
     {
-        "name": "get_argocd_applications",
-        "description": "Fetches detailed information of all ArgoCD applications from the ArgoCD server.",
-        "parameters": {
-            "type": "object",
-            "properties": {},
-            "required": []
-        },
-    },
-    {
         "name": "get_argocd_app_names",
-        "description": "Retrieves a list of all ArgoCD application names.",
+        "description": "Retrieves a list of names of all ArgoCD applications.",
         "parameters": {
             "type": "object",
             "properties": {},
@@ -102,13 +87,13 @@ argocd_function_definitions = [
     },
     {
         "name": "get_status_apps",
-        "description": "Retrieves applications with a specific sync status.",
+        "description": "Retrieves applications with a specific synchronization status.",
         "parameters": {
             "type": "object",
             "properties": {
                 "status": {
                     "type": "string",
-                    "description": "The sync status to filter applications by. Should be one of 'Synced', "
+                    "description": "The synchronization status to filter applications by. Should be one of 'Synced', "
                                    "'OutOfSync', or 'Unknown'."
                 }
             },
@@ -117,28 +102,13 @@ argocd_function_definitions = [
     },
     {
         "name": "count_status_apps",
-        "description": "Counts the number of applications with a specific sync status.",
+        "description": "Counts the number of applications with a specific synchronization status.",
         "parameters": {
             "type": "object",
             "properties": {
                 "status": {
                     "type": "string",
-                    "description": "The sync status to count applications by. Should be one of 'Synced', 'OutOfSync', "
-                                   "or 'Unknown'."
-                }
-            },
-            "required": ["status"]
-        },
-    },
-    {
-        "name": "get_status_app_names",
-        "description": "Retrieves a list of application names with a specific sync status.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "status": {
-                    "type": "string",
-                    "description": "The sync status to filter application names by. Should be one of 'Synced', "
+                    "description": "The synchronization status to count applications by. Should be one of 'Synced', "
                                    "'OutOfSync', or 'Unknown'."
                 }
             },
@@ -146,8 +116,23 @@ argocd_function_definitions = [
         },
     },
     {
+        "name": "get_status_app_names",
+        "description": "Retrieves a list of names of applications with a specific synchronization status.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "description": "The synchronization status to filter application names by. Should be one of "
+                                   "'Synced', 'OutOfSync', or 'Unknown'."
+                }
+            },
+            "required": ["status"]
+        },
+    },
+    {
         "name": "get_sync_errors",
-        "description": "Retrieves sync error messages for applications that are out of sync.",
+        "description": "Retrieves synchronization error messages for applications that are out of sync.",
         "parameters": {
             "type": "object",
             "properties": {},
@@ -156,11 +141,17 @@ argocd_function_definitions = [
     },
     {
         "name": "get_destination_server",
-        "description": "Retrieves the destination server of each application.",
+        "description": "Retrieves the destination server of a specific application.",
         "parameters": {
             "type": "object",
-            "properties": {},
-            "required": []
+            "properties": {
+                "app_name": {
+                    "type": "string",
+                    "description": "The name of the application."
+                }
+            },
+            "required": ["app_name"]
         },
     }
 ]
+
