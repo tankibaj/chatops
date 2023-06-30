@@ -19,7 +19,9 @@ headers = {
 
 def get_harbor_projects():
     response = requests.get(f"{HARBOR_URL}/api/v2.0/projects", headers=headers)
-    return response.json()
+    projects = response.json()
+    project_names = [project['name'] for project in projects]
+    return project_names
 
 
 def get_harbor_repositories(project_name):
@@ -95,15 +97,4 @@ harbor_function_definitions = [
             "required": ["artifact_reference"]
         }
     },
-    # {
-    #     "name": "get_harbor_repository",
-    #     "description": "Get information about a Harbor repository",
-    #     "parameters": {
-    #         "type": "object",
-    #         "properties": {
-    #             "repository_name": {"type": "string", "description": "The name of the repository"}
-    #         },
-    #         "required": ["repository_name"]
-    #     }
-    # }
 ]
