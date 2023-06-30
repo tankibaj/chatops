@@ -1,7 +1,5 @@
-import base64
 import os
 import requests
-import mistune
 import re
 from dotenv import find_dotenv, load_dotenv
 

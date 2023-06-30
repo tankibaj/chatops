@@ -69,7 +69,7 @@ argocd_functions = {
 argocd_function_definitions = [
     {
         "name": "get_argocd_app_names",
-        "description": "Retrieves a list of names of all ArgoCD applications.",
+        "description": "Retrieves names of all ArgoCD applications.",
         "parameters": {
             "type": "object",
             "properties": {},
@@ -110,21 +110,6 @@ argocd_function_definitions = [
                     "type": "string",
                     "description": "The synchronization status to count applications by. Should be one of 'Synced', "
                                    "'OutOfSync', or 'Unknown'."
-                }
-            },
-            "required": ["status"]
-        },
-    },
-    {
-        "name": "get_status_app_names",
-        "description": "Retrieves a list of names of applications with a specific synchronization status.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "status": {
-                    "type": "string",
-                    "description": "The synchronization status to filter application names by. Should be one of "
-                                   "'Synced', 'OutOfSync', or 'Unknown'."
                 }
             },
             "required": ["status"]
