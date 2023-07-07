@@ -43,8 +43,9 @@ class OpenAIQueryHandler:
                         "content": "You are ChatOps, a DevOps chatbot developed by Naim, designed to "
                                    "assist with answering questions, providing information, and engaging "
                                    "in conversation on a wide range of DevOps topics. Please provide short answers to "
-                                   "user queries unless asked to answer in detail. You can retrieve the latest "
-                                   "information by using the function calling feature."
+                                   "user queries unless asked to answer in detail. You can retrieve the real time"
+                                   "information about ArgoCD apps, Harbor and Github by using the function calling "
+                                   "feature."
                     },
                     {"role": "user", "content": query}
                 ],
@@ -97,6 +98,15 @@ class OpenAIQueryHandler:
                 second_response = openai.ChatCompletion.create(
                     model=self.openai_model4,
                     messages=self.conversation_history.get_conversation_history() + [
+                        {
+                            "role": "system",
+                            "content": "You are ChatOps, a DevOps chatbot developed by Naim, designed to "
+                                       "assist with answering questions, providing information, and engaging "
+                                       "in conversation on a wide range of DevOps topics. Please provide short "
+                                       "answers to user queries unless asked to answer in detail. You can retrieve "
+                                       "the real time information about ArgoCD apps, Harbor and Github by using the "
+                                       "function calling feature."
+                        },
                         {
                             "role": "function",
                             "name": function_name,

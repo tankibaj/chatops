@@ -31,7 +31,8 @@ def get_argocd_app_names():
 
 def count_argocd_apps():
     applications = get_argocd_app_names()
-    return len(applications)
+    count = len(applications)
+    return f"The current number of applications in ArgoCD is: {count}"
 
 
 def get_status_apps(status):
@@ -139,4 +140,3 @@ argocd_function_definitions = [
         },
     }
 ]
-
