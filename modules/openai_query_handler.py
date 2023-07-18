@@ -8,8 +8,7 @@ from modules.conversation_history import ConversationHistory
 
 class OpenAIQueryHandler:
     # Initialize the class with necessary parameters and configurations
-    def __init__(self, custom_toolkit_functions, openai_function_definitions, openai_model4="gpt-4-0613",
-                 openai_model3="gpt-3.5-turbo-0613", max_token_limit=4096):
+    def __init__(self, custom_toolkit_functions, openai_function_definitions, openai_model="gpt-4-0613"):
         # Load environment variables
         load_dotenv(find_dotenv())
         # Get the OpenAI API key from environment variables
@@ -21,22 +20,15 @@ class OpenAIQueryHandler:
         # Initialize class variables
         self.custom_toolkit_functions = custom_toolkit_functions
         self.openai_function_definitions = openai_function_definitions
-        self.openai_model4 = openai_model4
-        self.openai_model3 = openai_model3
-        self.tokenizer = tiktoken.encoding_for_model("gpt-4")
-        self.conversation_history = ConversationHistory()
-
-    # count token length
-    def count_tokens(self, text):
-        token_count = len(list(self.tokenizer.encode(text)))
-        return token_count
+        self.openai_model = openai_model
+        self.conversation_history = ConversationHistory(openai_model=self.openai_model, conversation_token_limit=20)
 
     # Method to initiate a conversation with the OpenAI API
     def initiate_openai_conversation(self, query):
         try:
             # Create a chat completion with the OpenAI API
             first_response = openai.ChatCompletion.create(
-                model=self.openai_model3,
+                model=self.openai_model,
                 messages=self.conversation_history.get_conversation_history() + [
                     {
                         "role": "system",
@@ -96,7 +88,7 @@ class OpenAIQueryHandler:
             try:
                 # Continue the conversation with the OpenAI API using the function response
                 second_response = openai.ChatCompletion.create(
-                    model=self.openai_model4,
+                    model=self.openai_model,
                     messages=self.conversation_history.get_conversation_history() + [
                         {
                             "role": "system",
