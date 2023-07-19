@@ -2,8 +2,10 @@ import json
 import os
 from dotenv import find_dotenv, load_dotenv
 import openai
-import tiktoken
+import logging
 from modules.conversation_history import ConversationHistory
+from langchain.memory import ConversationSummaryBufferMemory
+from langchain.llms import OpenAI
 
 
 class OpenAIQueryHandler:
@@ -21,25 +23,28 @@ class OpenAIQueryHandler:
         self.custom_toolkit_functions = custom_toolkit_functions
         self.openai_function_definitions = openai_function_definitions
         self.openai_model = openai_model
-        self.conversation_history = ConversationHistory(openai_model=self.openai_model, conversation_token_limit=20)
+        self.logger = logging.getLogger(__name__)
+        self.memory = ConversationSummaryBufferMemory(llm=OpenAI(), max_token_limit=100)
 
     # Method to initiate a conversation with the OpenAI API
-    def initiate_openai_conversation(self, query):
+    def initiate_conversation(self, query):
         try:
+            convo_history = self.memory.load_memory_variables({})
             # Create a chat completion with the OpenAI API
             first_response = openai.ChatCompletion.create(
                 model=self.openai_model,
-                messages=self.conversation_history.get_conversation_history() + [
+                messages=[
                     {
                         "role": "system",
                         "content": "You are ChatOps, a DevOps chatbot developed by Naim, designed to "
                                    "assist with answering questions, providing information, and engaging "
-                                   "in conversation on a wide range of DevOps topics. Please provide short answers to "
-                                   "user queries unless asked to answer in detail. You can retrieve the real time"
-                                   "information about ArgoCD apps, Harbor and Github by using the function calling "
-                                   "feature."
+                                   "in conversation on a wide range of DevOps topics. Please provide short "
+                                   "answers to user queries unless asked to answer in detail. You can retrieve "
+                                   "the real time information about ArgoCD apps, Harbor and Github by using the "
+                                   "function calling feature."
                     },
-                    {"role": "user", "content": query}
+                    {"role": "user", "content": f"Here is context: {convo_history}"},
+                    {"role": "user", "content": query},
                 ],
                 functions=self.openai_function_definitions,
             )
@@ -74,11 +79,8 @@ class OpenAIQueryHandler:
     # Method to construct the final response to the user query
     # Method to construct the final response to the user query
     def construct_openai_query_response(self, query):
-        # Save the user query to the conversation history
-        self.conversation_history.add_message("user", query)
-
         # Initiate the conversation with the OpenAI API
-        first_response = self.initiate_openai_conversation(query)
+        first_response = self.initiate_conversation(query)
 
         # Process the function call from the first response
         function_name, function_response = self.process_openai_function_call(first_response)
@@ -89,7 +91,7 @@ class OpenAIQueryHandler:
                 # Continue the conversation with the OpenAI API using the function response
                 second_response = openai.ChatCompletion.create(
                     model=self.openai_model,
-                    messages=self.conversation_history.get_conversation_history() + [
+                    messages=[
                         {
                             "role": "system",
                             "content": "You are ChatOps, a DevOps chatbot developed by Naim, designed to "
@@ -111,7 +113,8 @@ class OpenAIQueryHandler:
 
                 # Save the final response to the conversation history
                 if response is not None:
-                    self.conversation_history.add_message("assistant", response)
+                    self.memory.save_context({"input": query}, {"output": response})
+                    # self.logger.debug(self.memory.load_memory_variables({}))
             except openai.error.InvalidRequestError as e:
                 # Handle the token limit error specifically
                 if 'maximum context length' in str(e):
@@ -125,7 +128,8 @@ class OpenAIQueryHandler:
 
             # Save the final response to the conversation history
             if response is not None:
-                self.conversation_history.add_message("assistant", response)
+                self.memory.save_context({"input": query}, {"output": response})
+                # self.logger.debug(self.memory.load_memory_variables({}))
 
         # Return the final response
         return response

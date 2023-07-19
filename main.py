@@ -6,7 +6,7 @@ from modules.argocd import argocd_functions, argocd_function_definitions
 from modules.github import github_functions, github_function_definitions
 from modules.harbor import harbor_functions, harbor_function_definitions
 
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 
 # Combine all the functions from different modules
 custom_toolkit_functions = {**argocd_functions, **github_functions, **harbor_functions}
