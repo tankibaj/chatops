@@ -3,7 +3,6 @@ import os
 from dotenv import find_dotenv, load_dotenv
 import openai
 import logging
-from modules.conversation_history import ConversationHistory
 from langchain.memory import ConversationSummaryBufferMemory
 from langchain.llms import OpenAI
 
